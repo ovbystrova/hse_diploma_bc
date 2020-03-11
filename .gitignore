@@ -1,3 +1,6 @@
 /wikitext-2-v1.zip
 /wikitext-2/
 /wandb/
+/data/model_base
+/data/model_base_bert_embeddings
+/data/model_base_gpt2_embeddings
