@@ -4,3 +4,4 @@
 /data/model_base
 /data/model_base_bert_embeddings
 /data/model_base_gpt2_embeddings
+/data/train.2.pth
