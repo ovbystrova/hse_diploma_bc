@@ -16,7 +16,6 @@ class SimpleG(nn.Module):
 
         self.fc = nn.Linear(hidden_size * 2, vocab_size)
         self.init_weights()
-        self.gumbel = F.gumbel_softmax
 
     def init_weights(self):
         nn.init.uniform_(self.embedding.weight)
@@ -28,5 +27,5 @@ class SimpleG(nn.Module):
         x = self.embedding(x)  # (batch_size, sequence_length, embed_dim)
         x, _ = self.rnn(x)  # (batch_size, sequence length, hidden_size)
         x = self.fc(x)  # (batch_size, sequence_length, vocab_size)
-        x = self.gumbel(x, dim=-1)
+        # x = F.gumbel_softmax(x, dim=-1, hard=True)
         return x  # (batch_size, sequence_length, vocab_size)
