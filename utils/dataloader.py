@@ -2,6 +2,8 @@ import random
 from torch.utils.data import Dataset, DataLoader
 from utils.preprocess import *
 
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+if_cuda = True if torch.cuda.is_available() else False
 
 class GANDataset(Dataset):
     def __init__(self, data):
@@ -55,7 +57,7 @@ class GenDataIter:
         return torch.cat([data[col].unsqueeze(0) for data in self.loader.dataset.data], 0)
 
     @staticmethod
-    def prepare(samples, gpu=False):
+    def prepare(samples, gpu=if_cuda):
         """Add start_letter to samples as inp, target same as samples"""
         inp = torch.zeros(samples.size()).long()
         target = samples

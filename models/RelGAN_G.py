@@ -373,7 +373,7 @@ class LSTMGenerator(nn.Module):
                  padding_idx,
                  weights,
                  batch_size=BATCH_SIZE,
-                 gpu=False):
+                 gpu=if_cuda):
         super(LSTMGenerator, self).__init__()
         self.name = 'vanilla'
 
@@ -469,7 +469,7 @@ class LSTMGenerator(nn.Module):
 
 class RelGAN_G(LSTMGenerator):
     def __init__(self, mem_slots, num_heads, head_size, embedding_dim, hidden_dim, vocab_size, max_seq_len, padding_idx,
-                 gpu=False):
+                 gpu=if_cuda):
         super(RelGAN_G, self).__init__(embedding_dim, hidden_dim, vocab_size, max_seq_len, padding_idx, gpu)
         self.name = 'relgan'
 
@@ -541,17 +541,13 @@ class RelGAN_G(LSTMGenerator):
         """
         global all_preds
         num_batch = num_samples // batch_size + 1 if num_samples != batch_size else 1
-        samples = torch.zeros(num_batch * batch_size, self.max_seq_len).long()
+        samples = torch.zeros(num_batch * batch_size, self.max_seq_len).long().to(device)
         if one_hot:
-            all_preds = torch.zeros(batch_size, self.max_seq_len, self.vocab_size)
-            if self.gpu:
-                all_preds = all_preds.cuda()
+            all_preds = torch.zeros(batch_size, self.max_seq_len, self.vocab_size).to(device)
 
         for b in range(num_batch):
-            hidden = self.init_hidden(batch_size)
-            inp = torch.LongTensor([start_letter] * batch_size)
-            if self.gpu:
-                inp = inp.cuda()
+            hidden = self.init_hidden(batch_size).to(device)
+            inp = torch.LongTensor([start_letter] * batch_size).to(device)
 
             for i in range(self.max_seq_len):
                 pred, hidden, next_token, _, _ = self.step(inp, hidden)
@@ -568,10 +564,8 @@ class RelGAN_G(LSTMGenerator):
     @staticmethod
     def add_gumbel(o_t, eps=1e-10):
         """Add o_t by a vector sampled from Gumbel(0,1)"""
-        u = torch.zeros(o_t.size())
-        u.to(device)
-
-        u.uniform_(0, 1)
+        u = torch.zeros(o_t.size()).to(device)
+        u.uniform_(0, 1).to(device)
         g_t = -torch.log(-torch.log(u + eps) + eps)
-        gumbel_t = o_t + g_t
+        gumbel_t = o_t.to(device) + g_t
         return gumbel_t

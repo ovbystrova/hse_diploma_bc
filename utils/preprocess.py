@@ -10,6 +10,8 @@ MAX_SEQ_LEN = 50
 PAD_TOKEN = '<pad>'
 PAD_IDX = 0
 START_TOKEN = '<start>'
+UNK_TOKEN = '<unk>'
+UNK_IDX = 2
 BATCH_SIZE = 64
 
 
@@ -21,7 +23,8 @@ def get_tokenized(file, size=None, texts_size=TEXTS_SIZE):
     :param size: number of sentences
     :return: list of lists of tokens
     """
-    path = "{}\\real_data_{}.txt".format(file, texts_size)
+    # path = "{}\\real_data_{}.txt".format(file, texts_size)
+    path = "{}/real_data_{}.txt".format(file, texts_size)
     tokenized = list()
     with open(path, encoding='utf-8') as raw:
         for text in raw:
@@ -54,11 +57,13 @@ def get_dict(word_set):
     word2idx_dict = dict()
     idx2word_dict = dict()
 
-    index = 2
+    index = 3
     word2idx_dict['<pad>'] = '0'  # padding token
     idx2word_dict['0'] = PAD_TOKEN
     word2idx_dict['<start>'] = '1'  # start token
     idx2word_dict['1'] = START_TOKEN
+    word2idx_dict['<unk>'] = '2'
+    idx2word_dict['2'] = UNK_TOKEN
 
     for word in word_set:
         word2idx_dict[word] = str(index)
@@ -72,8 +77,10 @@ def load_dict(path):
     load word2index and index2word dictionaries from [path]
     :return: dict, dict
     """
-    iw_path = path + '\iw_dict.txt'
-    wi_path = path + '\wi_dict.txt'
+    # iw_path = path + '\iw_dict.txt'
+    # wi_path = path + '\wi_dict.txt'
+    iw_path = path + '/iw_dict.txt'
+    wi_path = path + '/wi_dict.txt'
     if not os.path.exists(iw_path) or not os.path.exists(iw_path):
         init_dict(path)
     with open(iw_path, 'r', encoding='utf-8') as dictin:
@@ -93,8 +100,10 @@ def init_dict(path):
     word_set = get_word_list(tokens)
     word2idx_dict, idx2word_dict = get_dict(word_set)
 
-    iw_path = path+'\iw_dict.txt'
-    wi_path = path+'\wi_dict.txt'
+    # iw_path = path+'\iw_dict.txt'
+    # wi_path = path+'\wi_dict.txt'
+    iw_path = path + '/iw_dict.txt'
+    wi_path = path + '/wi_dict.txt'
     with open(wi_path, 'w', encoding='utf-8') as dictout:
         dictout.write(str(word2idx_dict))
     with open(iw_path, 'w', encoding='utf-8') as dictout:
@@ -111,7 +120,10 @@ def tokens_to_tensor(tokens, dictionary):
         for i, word in enumerate(sent):
             if word == '<pad>':
                 break
-            sent_ten.append(int(dictionary[str(word)]))
+            try:
+                sent_ten.append(int(dictionary[str(word)]))
+            except:
+                sent_ten.append(UNK_IDX)
         while i < MAX_SEQ_LEN - 1:
             sent_ten.append(0)
             i += 1

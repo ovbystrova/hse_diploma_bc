@@ -164,7 +164,7 @@ class RelGANInstructor(BasicInstructor):
         #===PRE-TRAINING (GENERATOR)===
         print('Starting GENERATOR MLE TRAINING')
         self.pretrain_generator(5)
-        torch.save(self.gen.state_dict(), 'model_chechpoints/generator_mle')
+        torch.save(self.gen.state_dict(), 'data/generator_mle')
 
         # # ===ADVERSARIAL TRAINING===
         print('Starting Adversarial Training')

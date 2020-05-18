@@ -16,7 +16,7 @@ if_cuda = True if torch.cuda.is_available() else False
 
 
 class NLL(Metrics):
-    def __init__(self, name, if_use=False, gpu=False):
+    def __init__(self, name, if_use=False, gpu=if_cuda):
         super(NLL, self).__init__(name)
 
         self.if_use = if_use
