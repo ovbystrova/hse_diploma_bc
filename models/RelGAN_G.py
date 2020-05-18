@@ -11,16 +11,8 @@ import math
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import configuration as cfg
 from utils.helpers import truncated_normal_
-
-START_IDX = 1
-PAD_IDX = 0
-WEIGHTS = 'normal'
-BATCH_SIZE = 64
-MAX_SEQ_LEN = 50
-MODEL_TYPE = 'RMC'
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-if_cuda = True if torch.cuda.is_available() else False
 
 
 class RelationalMemory(nn.Module):
@@ -372,8 +364,8 @@ class LSTMGenerator(nn.Module):
                  max_seq_len,
                  padding_idx,
                  weights,
-                 batch_size=BATCH_SIZE,
-                 gpu=if_cuda):
+                 batch_size=cfg.BATCH_SIZE,
+                 gpu=cfg.if_cuda):
         super(LSTMGenerator, self).__init__()
         self.name = 'vanilla'
 
@@ -417,29 +409,29 @@ class LSTMGenerator(nn.Module):
         else:
             return pred
 
-    def sample(self, num_samples, batch_size, start_letter=START_IDX):
-        """
-        Samples the network and returns num_samples samples of length max_seq_len.
-        :return samples: num_samples * max_seq_length (a sampled sequence in each row)
-        """
-        num_batch = num_samples // batch_size + 1 if num_samples != batch_size else 1
-        samples = torch.zeros(num_batch * batch_size, self.max_seq_len).long()
-
-        # Generate sentences with multinomial sampling strategy
-        for b in range(num_batch):
-            hidden = self.init_hidden(batch_size)
-            inp = torch.LongTensor([start_letter] * batch_size)
-            if self.gpu:
-                inp = inp.cuda()
-
-            for i in range(self.max_seq_len):
-                out, hidden = self.forward(inp, hidden, need_hidden=True)  # out: batch_size * vocab_size
-                next_token = torch.multinomial(torch.exp(out), 1)  # batch_size * 1 (sampling from each row)
-                samples[b * batch_size:(b + 1) * batch_size, i] = next_token.view(-1)
-                inp = next_token.view(-1)
-        samples = samples[:num_samples]
-
-        return samples
+    # def sample(self, num_samples, batch_size, start_letter=cfg.START_IDX):
+    #     """
+    #     Samples the network and returns num_samples samples of length max_seq_len.
+    #     :return samples: num_samples * max_seq_length (a sampled sequence in each row)
+    #     """
+    #     num_batch = num_samples // batch_size + 1 if num_samples != batch_size else 1
+    #     samples = torch.zeros(num_batch * batch_size, self.max_seq_len).long()
+    #
+    #     # Generate sentences with multinomial sampling strategy
+    #     for b in range(num_batch):
+    #         hidden = self.init_hidden(batch_size)
+    #         inp = torch.LongTensor([start_letter] * batch_size)
+    #         if self.gpu:
+    #             inp = inp.cuda()
+    #
+    #         for i in range(self.max_seq_len):
+    #             out, hidden = self.forward(inp, hidden, need_hidden=True)  # out: batch_size * vocab_size
+    #             next_token = torch.multinomial(torch.exp(out), 1)  # batch_size * 1 (sampling from each row)
+    #             samples[b * batch_size:(b + 1) * batch_size, i] = next_token.view(-1)
+    #             inp = next_token.view(-1)
+    #     samples = samples[:num_samples]
+    #
+    #     return samples
 
     def init_params(self):
         for param in self.parameters():
@@ -457,7 +449,7 @@ class LSTMGenerator(nn.Module):
             if param.requires_grad:
                 torch.nn.init.normal_(param, mean=0, std=1)
 
-    def init_hidden(self, batch_size=BATCH_SIZE):
+    def init_hidden(self, batch_size=cfg.BATCH_SIZE):
         h = torch.zeros(1, batch_size, self.hidden_dim)
         c = torch.zeros(1, batch_size, self.hidden_dim)
 
@@ -469,14 +461,14 @@ class LSTMGenerator(nn.Module):
 
 class RelGAN_G(LSTMGenerator):
     def __init__(self, mem_slots, num_heads, head_size, embedding_dim, hidden_dim, vocab_size, max_seq_len, padding_idx,
-                 gpu=if_cuda):
+                 gpu=cfg.if_cuda):
         super(RelGAN_G, self).__init__(embedding_dim, hidden_dim, vocab_size, max_seq_len, padding_idx, gpu)
         self.name = 'relgan'
-
+        self.weights = 'truncated_normal'
         self.temperature = 1.0  # init value is 1.0
 
         self.embeddings = nn.Embedding(vocab_size, embedding_dim, padding_idx=padding_idx)
-        if MODEL_TYPE == 'LSTM':
+        if cfg.MODEL_TYPE == 'LSTM':
             # LSTM
             self.hidden_dim = hidden_dim
             self.lstm = nn.LSTM(embedding_dim, self.hidden_dim, batch_first=True)
@@ -491,8 +483,8 @@ class RelGAN_G(LSTMGenerator):
         self.init_params()
         pass
 
-    def init_hidden(self, batch_size=BATCH_SIZE):
-        if MODEL_TYPE == 'LSTM':
+    def init_hidden(self, batch_size=cfg.BATCH_SIZE):
+        if cfg.MODEL_TYPE == 'LSTM':
             h = torch.zeros(1, batch_size, self.hidden_dim)
             c = torch.zeros(1, batch_size, self.hidden_dim)
 
@@ -531,7 +523,7 @@ class RelGAN_G(LSTMGenerator):
 
         return pred, hidden, next_token, next_token_onehot, next_o
 
-    def sample(self, num_samples, batch_size, one_hot=False, start_letter=START_IDX):
+    def sample(self, num_samples, batch_size, one_hot=False, start_letter=cfg.START_IDX):
         """
         Sample from RelGAN Generator
         - one_hot: if return pred of RelGAN, used for adversarial training
@@ -541,13 +533,12 @@ class RelGAN_G(LSTMGenerator):
         """
         global all_preds
         num_batch = num_samples // batch_size + 1 if num_samples != batch_size else 1
-        samples = torch.zeros(num_batch * batch_size, self.max_seq_len).long().to(device)
+        samples = torch.zeros(num_batch * batch_size, self.max_seq_len).long().to(cfg.device)
         if one_hot:
-            all_preds = torch.zeros(batch_size, self.max_seq_len, self.vocab_size).to(device)
-
+            all_preds = torch.zeros(batch_size, self.max_seq_len, self.vocab_size).to(cfg.device)
         for b in range(num_batch):
-            hidden = self.init_hidden(batch_size).to(device)
-            inp = torch.LongTensor([start_letter] * batch_size).to(device)
+            hidden = self.init_hidden(batch_size).to(cfg.device)
+            inp = torch.LongTensor([start_letter] * batch_size).to(cfg.device)
 
             for i in range(self.max_seq_len):
                 pred, hidden, next_token, _, _ = self.step(inp, hidden)
@@ -556,7 +547,6 @@ class RelGAN_G(LSTMGenerator):
                     all_preds[:, i] = pred
                 inp = next_token
         samples = samples[:num_samples]  # num_samples * seq_len
-
         if one_hot:
             return all_preds  # batch_size * seq_len * vocab_size
         return samples
@@ -564,8 +554,8 @@ class RelGAN_G(LSTMGenerator):
     @staticmethod
     def add_gumbel(o_t, eps=1e-10):
         """Add o_t by a vector sampled from Gumbel(0,1)"""
-        u = torch.zeros(o_t.size()).to(device)
-        u.uniform_(0, 1).to(device)
+        u = torch.zeros(o_t.size()).to(cfg.device)
+        u.uniform_(0, 1).to(cfg.device)
         g_t = -torch.log(-torch.log(u + eps) + eps)
-        gumbel_t = o_t.to(device) + g_t
+        gumbel_t = o_t.to(cfg.device) + g_t
         return gumbel_t

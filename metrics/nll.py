@@ -9,14 +9,12 @@
 
 import torch
 import torch.nn as nn
+import configuration as cfg
 from metrics.basic import Metrics
-
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-if_cuda = True if torch.cuda.is_available() else False
 
 
 class NLL(Metrics):
-    def __init__(self, name, if_use=False, gpu=if_cuda):
+    def __init__(self, name, if_use=False, gpu=cfg.if_cuda):
         super(NLL, self).__init__(name)
 
         self.if_use = if_use
@@ -48,7 +46,7 @@ class NLL(Metrics):
         self.leak_dis = leak_dis
 
     @staticmethod
-    def cal_nll(model, data_loader, criterion, gpu=if_cuda):
+    def cal_nll(model, data_loader, criterion, gpu=cfg.if_cuda):
         """NLL score for general text generation model."""
         total_loss = 0
         with torch.no_grad():
@@ -64,7 +62,7 @@ class NLL(Metrics):
         return round(total_loss / len(data_loader), 4)
 
     @staticmethod
-    def cal_nll_with_label(model, data_loader, label_i, criterion, gpu=if_cuda):
+    def cal_nll_with_label(model, data_loader, label_i, criterion, gpu=cfg.if_cuda):
         """NLL score for category text generation model."""
         assert type(label_i) == int, 'missing label'
         total_loss = 0
@@ -85,7 +83,7 @@ class NLL(Metrics):
         return round(total_loss / len(data_loader), 4)
 
     @staticmethod
-    def cal_nll_with_leak_dis(model, data_loader, leak_dis, gpu=if_cuda):
+    def cal_nll_with_leak_dis(model, data_loader, leak_dis, gpu=cfg.if_cuda):
         """NLL score for LeakGAN."""
         total_loss = 0
         with torch.no_grad():

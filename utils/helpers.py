@@ -17,7 +17,7 @@ def truncated_normal_(tensor, mean=0, std=1):
 
 def get_fixed_temperature(temper, i, N, adapt):
     """A function to set up different temperature control policies"""
-    N = 5000
+    # N = 5000
     if adapt == 'no':
         temper_var_np = 1.0  # no increase, origin: temper
     elif adapt == 'lin':

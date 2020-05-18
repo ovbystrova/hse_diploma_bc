@@ -1,9 +1,8 @@
 import random
 from torch.utils.data import Dataset, DataLoader
+import configuration as cfg
 from utils.preprocess import *
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-if_cuda = True if torch.cuda.is_available() else False
 
 class GANDataset(Dataset):
     def __init__(self, data):
@@ -19,11 +18,17 @@ class GANDataset(Dataset):
 class GenDataIter:
     def __init__(self, data,
                  batch_size,
-                 shuffle=None):
+                 shuffle=None,
+                 if_test_data=False):
         self.batch_size = batch_size
         self.start_letter = '<start>'
         self.shuffle = shuffle
-        self.word2idx, self.idx2word = load_dict(DATA_PATH)
+        self.test=if_test_data
+
+        if if_test_data:  # used for the classifier
+            self.word2idx, self.idx2word = load_test_dict()
+        else:
+            self.word2idx, self.idx2word = load_dict(cfg.DATA_PATH)
 
         self.loader = DataLoader(
             dataset=GANDataset(self.__read_data__(data)),
@@ -57,12 +62,12 @@ class GenDataIter:
         return torch.cat([data[col].unsqueeze(0) for data in self.loader.dataset.data], 0)
 
     @staticmethod
-    def prepare(samples, gpu=if_cuda):
+    def prepare(samples, gpu=cfg.if_cuda):
         """Add start_letter to samples as inp, target same as samples"""
         inp = torch.zeros(samples.size()).long()
         target = samples
         inp[:, 0] = 1
-        inp[:, 1:] = target[:, :MAX_SEQ_LEN - 1]
+        inp[:, 1:] = target[:, :cfg.MAX_SEQ_LEN - 1]
 
         if gpu:
             return inp.cuda(), target.cuda()
@@ -70,8 +75,9 @@ class GenDataIter:
 
     def load_data(self, filename):
         """Load real data from local file"""
-        self.tokens = get_tokenized(filename)
+        if self.test:
+            self.tokens = get_tokenized(filename, if_test=True)
+        else:
+            self.tokens = get_tokenized(filename)
         samples_index = tokens_to_tensor(self.tokens, self.word2idx)
-        # tokens = get_tokenized(filename)
-        # samples_index = tokens_to_tensor(tokens, self.word2idx)
         return self.prepare(samples_index)

@@ -1,30 +1,26 @@
 import os
 import torch
 import nltk
+import configuration as cfg
 from random import choices, seed
 seed(23)
 
-DATA_PATH = r"data"
-TEXTS_SIZE = '2k'  # 2k, 10k, 20k
-MAX_SEQ_LEN = 50
-PAD_TOKEN = '<pad>'
-PAD_IDX = 0
-START_TOKEN = '<start>'
-UNK_TOKEN = '<unk>'
-UNK_IDX = 2
-BATCH_SIZE = 64
 
-
-def get_tokenized(file, size=None, texts_size=TEXTS_SIZE):
+def get_tokenized(file, size=None, texts_size=cfg.TEXTS_SIZE, if_test=False):
     """
     tokenize [file] and sample [size] random samples
+    :param if_test:
     :param texts_size: str, one of [2k, 10k, 20k]
     :param file: path to the real_data.txt file
     :param size: number of sentences
     :return: list of lists of tokens
     """
     # path = "{}\\real_data_{}.txt".format(file, texts_size)
-    path = "{}/real_data_{}.txt".format(file, texts_size)
+    print(if_test)
+    if if_test:
+        path = file
+    else:
+        path = "{}/real_data_{}.txt".format(file, texts_size)
     tokenized = list()
     with open(path, encoding='utf-8') as raw:
         for text in raw:
@@ -59,12 +55,11 @@ def get_dict(word_set):
 
     index = 3
     word2idx_dict['<pad>'] = '0'  # padding token
-    idx2word_dict['0'] = PAD_TOKEN
+    idx2word_dict['0'] = cfg.PAD_TOKEN
     word2idx_dict['<start>'] = '1'  # start token
-    idx2word_dict['1'] = START_TOKEN
+    idx2word_dict['1'] = cfg.START_TOKEN
     word2idx_dict['<unk>'] = '2'
-    idx2word_dict['2'] = UNK_TOKEN
-
+    idx2word_dict['2'] = cfg.UNK_TOKEN
     for word in word_set:
         word2idx_dict[word] = str(index)
         idx2word_dict[str(index)] = word
@@ -89,6 +84,20 @@ def load_dict(path):
         word2idx_dict = eval(dictin.read().strip())
     return word2idx_dict, idx2word_dict
 
+def load_test_dict():
+    """Build test data dictionary, extend from train data. For the classifier."""
+    word2idx_dict, idx2word_dict = load_dict(cfg.DATA_PATH)  # train dict
+    tokens = get_tokenized(cfg.TEST_DATA_PATH, if_test=True)
+    word_set = get_word_list(tokens)
+    index = len(word2idx_dict)
+    # extend dict with test data
+    for word in word_set:
+        if word not in word2idx_dict:
+            word2idx_dict[word] = str(index)
+            idx2word_dict[str(index)] = word
+            index += 1
+    return word2idx_dict, idx2word_dict
+
 
 def init_dict(path):
     """
@@ -99,7 +108,6 @@ def init_dict(path):
     tokens = get_tokenized(path)
     word_set = get_word_list(tokens)
     word2idx_dict, idx2word_dict = get_dict(word_set)
-
     # iw_path = path+'\iw_dict.txt'
     # wi_path = path+'\wi_dict.txt'
     iw_path = path + '/iw_dict.txt'
@@ -123,11 +131,11 @@ def tokens_to_tensor(tokens, dictionary):
             try:
                 sent_ten.append(int(dictionary[str(word)]))
             except:
-                sent_ten.append(UNK_IDX)
-        while i < MAX_SEQ_LEN - 1:
+                sent_ten.append(cfg.UNK_IDX)
+        while i < cfg.MAX_SEQ_LEN - 1:
             sent_ten.append(0)
             i += 1
-        tensor.append(sent_ten[:MAX_SEQ_LEN])
+        tensor.append(sent_ten[:cfg.MAX_SEQ_LEN])
     return torch.LongTensor(tensor)
 
 
@@ -137,7 +145,7 @@ def tensor_to_tokens(tensor, dictionary):
     for sent in tensor:
         sent_token = []
         for word in sent.tolist():
-            if word == PAD_IDX:
+            if word == cfg.PAD_IDX:
                 break
             sent_token.append(dictionary[str(word)])
         tokens.append(sent_token)
