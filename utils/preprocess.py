@@ -15,8 +15,6 @@ def get_tokenized(file, size=None, texts_size=cfg.TEXTS_SIZE, if_test=False):
     :param size: number of sentences
     :return: list of lists of tokens
     """
-    # path = "{}\\real_data_{}.txt".format(file, texts_size)
-    print(if_test)
     if if_test:
         path = file
     else:

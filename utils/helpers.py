@@ -35,3 +35,11 @@ def get_fixed_temperature(temper, i, N, adapt):
     else:
         raise Exception("Unknown adapt type!")
     return temper_var_np
+
+
+def write_tokens(filename, tokens):
+    """Write word tokens to a local file (For Real data)"""
+    with open(filename, 'w') as f:
+        for sent in tokens:
+            f.write(' '.join(sent))
+            f.write('\n')

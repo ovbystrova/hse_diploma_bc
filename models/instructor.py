@@ -2,7 +2,7 @@ import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
 from tqdm import tqdm
-from utils.helpers import get_fixed_temperature
+from utils.helpers import get_fixed_temperature, write_tokens
 from utils.dataloader import GenDataIter
 from utils.preprocess import *
 from models.RelGAN_D import RelGAN_D
@@ -126,6 +126,7 @@ class BasicInstructor:
             return [metric.get_score() for metric in self.all_metrics]
 
 
+
 class RelGANInstructor(BasicInstructor):
     def __init__(self):
         super(RelGANInstructor, self).__init__()
@@ -157,17 +158,15 @@ class RelGANInstructor(BasicInstructor):
                 'g_loss: %.4f, d_loss: %.4f, temperature: %.4f' % (g_loss, d_loss, self.gen.temperature))
             # TEST
             metrics = self.cal_metrics(fmt_str=False)
-            print('METRICS', metrics)
-            wandb.log({'g_loss' : g_loss, 'd_loss': d_loss,
-                       'BLEU_2': None, 'BLEU_3': None, 'BLEU_4': None, 'BLEU_5': None,
-                       'NLL_gen': None,
-                       'NLL_div': None,
-                       "Self-BLEU_2": None, "Self-BLEU_3": None, "Self-BLEU_4": None,
+            wandb.log({'g_loss': g_loss, 'd_loss': d_loss,
+                       'BLEU_2': metrics[0][0], 'BLEU_3': metrics[0][1], 'BLEU_4': metrics[0][2], 'BLEU_5': metrics[0][3],
+                       'NLL_gen': metrics[1],
+                       'NLL_div': metrics[2],
+                       "Self-BLEU_2": metrics[3][0], "Self-BLEU_3": metrics[3][1], "Self-BLEU_4": metrics[3][2],
                        'epoch_adversarial': adv_epoch})
             print('[ADV] epoch %d: g_loss: %.4f, d_loss: %.4f, %s' % (
                         adv_epoch, g_loss, d_loss, self.cal_metrics(fmt_str=True)))
-            if adv_epoch % 20 == 0:
-                pass
+            self._save('ADV', adv_epoch)
 
     def _test(self):
         print('>>> Begin test...')
@@ -186,15 +185,16 @@ class RelGANInstructor(BasicInstructor):
                 pass
 
             metrics = self.cal_metrics(fmt_str=False)
-            print('METRICS', metrics)
             wandb.log({'nll loss pretrain': pre_loss,
-                       'BLEU_2': None, 'BLEU_3': None, 'BLEU_4': None, 'BLEU_5': None,
-                       'NLL_gen': None,
-                       'NLL_div': None,
-                       "Self-BLEU_2": None, "Self-BLEU_3": None, "Self-BLEU_4": None,
+                       'BLEU_2': metrics[0][0], 'BLEU_3': metrics[0][1], 'BLEU_4': metrics[0][2],
+                       'BLEU_5': metrics[0][3],
+                       'NLL_gen': metrics[1],
+                       'NLL_div': metrics[2],
+                       "Self-BLEU_2": metrics[3][0], "Self-BLEU_3": metrics[3][1], "Self-BLEU_4": metrics[3][2],
                        'epoch_mle': epoch})
             print('[MLE-GEN] epoch %d : pre_loss = %.4f, %s' % (
                         epoch, pre_loss, self.cal_metrics(fmt_str=True)))
+            self._save('MLE', epoch)
 
     def adv_train_generator(self, g_step):
         total_loss = 0
@@ -230,6 +230,14 @@ class RelGANInstructor(BasicInstructor):
 
     def update_temperature(self, i, N):
         self.gen.temperature = get_fixed_temperature(cfg.TEMPERATURE, i, N, cfg.TEMP_ADPT)
+
+    def _save(self, phase, epoch):
+        """Save model state dict and generator's samples"""
+        if phase != 'ADV':
+            torch.save(self.gen.state_dict(), 'gen_{}_{:05d}.pt'.format(phase, epoch))
+        save_sample_path = 'samples_{}_{:05d}.txt'.format(phase, epoch)
+        samples = self.gen.sample(cfg.BATCH_SIZE, cfg.BATCH_SIZE)
+        write_tokens(save_sample_path, tensor_to_tokens(samples, self.idx2word_dict))
 
     @staticmethod
     def optimize(opt, loss, model=None, retain_graph=False):
