@@ -1,7 +1,9 @@
+import torch
 import random
 from torch.utils.data import Dataset, DataLoader
 import configuration as cfg
-from utils.preprocess import *
+# from utils.preprocess import *
+from utils.preprocess import load_test_dict, load_dict, get_tokenized, tokens_to_tensor
 
 
 class GANDataset(Dataset):
@@ -21,9 +23,9 @@ class GenDataIter:
                  shuffle=None,
                  if_test_data=False):
         self.batch_size = batch_size
-        self.start_letter = '<start>'
+        self.start_letter = cfg.START_TOKEN
         self.shuffle = shuffle
-        self.test=if_test_data
+        self.test = if_test_data
 
         if if_test_data:  # used for the classifier
             self.word2idx, self.idx2word = load_test_dict()
@@ -49,8 +51,8 @@ class GenDataIter:
         elif isinstance(samples, str):  # filename
             inp, target = self.load_data(samples)
             all_data = [{'input': i, 'target': t} for (i, t) in zip(inp, target)]
-        # inp, target = self.load_data(samples)
-        # all_data = [{'input': i, 'target': t} for (i, t) in zip(inp, target)]
+        else:
+            raise TypeError('samples should be either torch.Tensor or str, got {}'.format(type(samples)))
         return all_data
 
     def random_batch(self):

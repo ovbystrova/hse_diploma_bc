@@ -3,6 +3,7 @@ import torch
 import nltk
 import configuration as cfg
 from random import choices, seed
+from transformers import GPT2Tokenizer
 seed(23)
 
 
@@ -15,6 +16,8 @@ def get_tokenized(file, size=None, texts_size=cfg.TEXTS_SIZE, if_test=False):
     :param size: number of sentences
     :return: list of lists of tokens
     """
+    tokenizer_gpt2 = GPT2Tokenizer.from_pretrained('gpt2', unk_token='<unk>', eos_token='<pad>',
+                                              pad_token='<pad>', bos_token='<start>')
     if if_test:
         path = file
     else:
@@ -22,7 +25,12 @@ def get_tokenized(file, size=None, texts_size=cfg.TEXTS_SIZE, if_test=False):
     tokenized = list()
     with open(path, encoding='utf-8') as raw:
         for text in raw:
-            text = nltk.word_tokenize(text.lower())
+            if cfg.tokenizator == 'GPT2':
+                text = tokenizer_gpt2.tokenize(text)
+            elif cfg.tokenizator == 'BERT':  # TODO BertTokenizer
+                raise NotImplementedError
+            else:  # nltk tokenizer as default choice
+                text = nltk.word_tokenize(text.lower())
             tokenized.append(text)
     if size is not None:
         tokenized = choices(tokenized, k=size)
@@ -52,9 +60,9 @@ def get_dict(word_set):
     idx2word_dict = dict()
 
     index = 3
-    word2idx_dict['<pad>'] = '0'  # padding token
+    word2idx_dict['<pad>'] = '0'
     idx2word_dict['0'] = cfg.PAD_TOKEN
-    word2idx_dict['<start>'] = '1'  # start token
+    word2idx_dict['<start>'] = '1'
     idx2word_dict['1'] = cfg.START_TOKEN
     word2idx_dict['<unk>'] = '2'
     idx2word_dict['2'] = cfg.UNK_TOKEN
@@ -70,10 +78,8 @@ def load_dict(path):
     load word2index and index2word dictionaries from [path]
     :return: dict, dict
     """
-    # iw_path = path + '\iw_dict.txt'
-    # wi_path = path + '\wi_dict.txt'
-    iw_path = path + '/iw_dict.txt'
-    wi_path = path + '/wi_dict.txt'
+    iw_path = path + '/iw_{}.txt'.format(cfg.tokenizator)
+    wi_path = path + '/wi_{}.txt'.format(cfg.tokenizator)
     if not os.path.exists(iw_path) or not os.path.exists(iw_path):
         init_dict(path)
     with open(iw_path, 'r', encoding='utf-8') as dictin:
@@ -81,6 +87,7 @@ def load_dict(path):
     with open(wi_path, 'r', encoding='utf-8') as dictin:
         word2idx_dict = eval(dictin.read().strip())
     return word2idx_dict, idx2word_dict
+
 
 def load_test_dict():
     """Build test data dictionary, extend from train data. For the classifier."""
@@ -100,16 +107,14 @@ def load_test_dict():
 def init_dict(path):
     """
     initialise word2index and index2word dicts. saves them to [path]
-    :param path: path to data foler
+    :param path: path to data folder
     :return:
     """
     tokens = get_tokenized(path)
     word_set = get_word_list(tokens)
     word2idx_dict, idx2word_dict = get_dict(word_set)
-    # iw_path = path+'\iw_dict.txt'
-    # wi_path = path+'\wi_dict.txt'
-    iw_path = path + '/iw_dict.txt'
-    wi_path = path + '/wi_dict.txt'
+    iw_path = path + '/iw_{}.txt'.format(cfg.tokenizator)
+    wi_path = path + '/wi_{}.txt'.format(cfg.tokenizator)
     with open(wi_path, 'w', encoding='utf-8') as dictout:
         dictout.write(str(word2idx_dict))
     with open(iw_path, 'w', encoding='utf-8') as dictout:
@@ -119,19 +124,18 @@ def init_dict(path):
 
 def tokens_to_tensor(tokens, dictionary):
     """transform word tokens to Tensor"""
-    # global i
     tensor = []
     for sent in tokens:
         sent_ten = []
         for i, word in enumerate(sent):
-            if word == '<pad>':
+            if word == cfg.PAD_TOKEN:
                 break
             try:
                 sent_ten.append(int(dictionary[str(word)]))
             except:
                 sent_ten.append(cfg.UNK_IDX)
         while i < cfg.MAX_SEQ_LEN - 1:
-            sent_ten.append(0)
+            sent_ten.append(cfg.PAD_IDX)
             i += 1
         tensor.append(sent_ten[:cfg.MAX_SEQ_LEN])
     return torch.LongTensor(tensor)
@@ -148,3 +152,17 @@ def tensor_to_tokens(tensor, dictionary):
             sent_token.append(dictionary[str(word)])
         tokens.append(sent_token)
     return tokens
+
+
+def save_tokens_transformer(filename, samples):
+    if cfg.tokenizator == 'GPT2':
+        tokenizer = GPT2Tokenizer.from_pretrained('gpt2', unk_token='<unk>', eos_token='<pad>',
+                                                  pad_token='<pad>', bos_token='<start>')
+    elif cfg.tokenizator == 'BERT':  # TODO implement
+        raise NotImplementedError
+
+    texts = [tokenizer.decode(x) for x in samples]
+    with open(filename, 'w', encoding='utf-8') as f:
+        for sent in texts:
+            f.write(sent)
+            f.write('\n')

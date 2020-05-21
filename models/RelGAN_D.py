@@ -39,19 +39,19 @@ class RelGAN_D(nn.Module):
         self.dropout = nn.Dropout(dropout)
         self.init_params()
 
-    def get_feature(self, inp):
-        """
-        Get feature vector of given sentences
-        :param inp: batch_size * max_seq_len
-        :return: batch_size * feature_dim
-        """
-        emb = self.embeddings(inp).unsqueeze(1)  # batch_size * 1 * max_seq_len * embed_dim
-        convs = [F.relu(conv(emb)).squeeze(3) for conv in self.convs]  # [batch_size * num_filter * length]
-        pools = [F.max_pool1d(conv, conv.size(2)).squeeze(2) for conv in convs]  # [batch_size * num_filter]
-        pred = torch.cat(pools, 1)  # tensor: batch_size * feature_dim
-        highway = self.highway(pred)
-        pred = torch.sigmoid(highway) * F.relu(highway) + (1. - torch.sigmoid(highway)) * pred  # highway
-        return pred
+    # def get_feature(self, inp):
+    #     """
+    #     Get feature vector of given sentences
+    #     :param inp: batch_size * max_seq_len
+    #     :return: batch_size * feature_dim
+    #     """
+    #     emb = self.embeddings(inp).unsqueeze(1)  # batch_size * 1 * max_seq_len * embed_dim
+    #     convs = [F.relu(conv(emb)).squeeze(3) for conv in self.convs]  # [batch_size * num_filter * length]
+    #     pools = [F.max_pool1d(conv, conv.size(2)).squeeze(2) for conv in convs]  # [batch_size * num_filter]
+    #     pred = torch.cat(pools, 1)  # tensor: batch_size * feature_dim
+    #     highway = self.highway(pred)
+    #     pred = torch.sigmoid(highway) * F.relu(highway) + (1. - torch.sigmoid(highway)) * pred  # highway
+    #     return pred
 
     def init_params(self):
         for param in self.parameters():
