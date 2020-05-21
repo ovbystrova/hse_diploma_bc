@@ -8,8 +8,8 @@ from tqdm import tqdm
 import wandb
 from utils.loss_functions import rsgan
 import torch.nn.functional as F
-from utils.helpers import get_fixed_temperature
-from utils.preprocess import save_tokens_transformer
+from utils.helpers import get_fixed_temperature, write_tokens_gpt
+from utils.preprocess import  tensor_to_tokens
 
 
 class LSTMInstructor(BasicInstructor):
@@ -122,7 +122,8 @@ class LSTMInstructor(BasicInstructor):
             torch.save(self.gen.state_dict(), 'gen_{}_{:05d}.pt'.format(phase, epoch))
         save_sample_path = 'samples_{}_{:05d}.txt'.format(phase, epoch)
         samples = self.gen.sample(cfg.BATCH_SIZE, cfg.BATCH_SIZE)
-        save_tokens_transformer(save_sample_path, samples)
+        # save_tokens_transformer(save_sample_path, samples)
+        write_tokens_gpt(save_sample_path, tensor_to_tokens(samples, self.idx2word_dict))
 
     @staticmethod
     def optimize(opt, loss, model=None, retain_graph=False):

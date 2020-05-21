@@ -1,4 +1,5 @@
 import numpy as np
+from transformers import GPT2Tokenizer
 
 
 def truncated_normal_(tensor, mean=0, std=1):
@@ -42,4 +43,15 @@ def write_tokens(filename, tokens):
     with open(filename, 'w') as f:
         for sent in tokens:
             f.write(' '.join(sent))
+            f.write('\n')
+
+
+def write_tokens_gpt(filename, tokens):
+    """Write word tokens to a local file (For Real data)"""
+    tokenizer = GPT2Tokenizer.from_pretrained('gpt2', unk_token='<unk>', eos_token='<pad>',
+                                              pad_token='<pad>', bos_token='<start>')
+    tokens = [tokenizer.convert_tokens_to_string(x) for x in tokens]
+    with open(filename, 'w') as f:
+        for sent in tokens:
+            f.write(sent)
             f.write('\n')

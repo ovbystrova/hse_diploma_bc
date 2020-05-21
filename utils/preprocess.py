@@ -152,17 +152,3 @@ def tensor_to_tokens(tensor, dictionary):
             sent_token.append(dictionary[str(word)])
         tokens.append(sent_token)
     return tokens
-
-
-def save_tokens_transformer(filename, samples):
-    if cfg.tokenizator == 'GPT2':
-        tokenizer = GPT2Tokenizer.from_pretrained('gpt2', unk_token='<unk>', eos_token='<pad>',
-                                                  pad_token='<pad>', bos_token='<start>')
-    elif cfg.tokenizator == 'BERT':  # TODO implement
-        raise NotImplementedError
-
-    texts = [tokenizer.decode(x) for x in samples]
-    with open(filename, 'w', encoding='utf-8') as f:
-        for sent in texts:
-            f.write(sent)
-            f.write('\n')
