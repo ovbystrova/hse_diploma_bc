@@ -29,7 +29,7 @@ class LSTMInstructor(BasicInstructor):
 
     def _run(self):
         #===PRE-TRAINING (GENERATOR)===
-        if not cfg.GEN_PRETRAIN:
+        if cfg.GEN_PRETRAIN:
             print('Starting GENERATOR MLE TRAINING')
             self.pretrain_generator(cfg.MLE_train_epoch)
             torch.save(self.gen.state_dict(), 'data/generator_mle')

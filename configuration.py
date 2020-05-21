@@ -3,7 +3,7 @@ import torch
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 if_cuda = True if torch.cuda.is_available() else False
 
-GEN_PRETRAIN = True  # If load pretrained generator
+GEN_PRETRAIN = True  # If pretrain generator
 GEN_PR_PATH = ''  # Path to pretrained generator model
 
 MLE_train_epoch = 50  # for how long to pretrain the generator
