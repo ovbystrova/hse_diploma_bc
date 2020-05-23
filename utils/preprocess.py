@@ -3,7 +3,7 @@ import torch
 import nltk
 import configuration as cfg
 from random import choices, seed
-from transformers import GPT2Tokenizer
+from transformers import GPT2Tokenizer, DistilBertTokenizer
 seed(23)
 
 
@@ -18,6 +18,9 @@ def get_tokenized(file, size=None, texts_size=cfg.TEXTS_SIZE, if_test=False):
     """
     tokenizer_gpt2 = GPT2Tokenizer.from_pretrained('gpt2', unk_token='<unk>', eos_token='<pad>',
                                               pad_token='<pad>', bos_token='<start>')
+
+    tokenizer_bert = DistilBertTokenizer.from_pretrained('distilbert-base-cased', unk_token='<unk>', eos_token='<pad>',
+                                              pad_token='<pad>', bos_token='<start>')
     if if_test:
         path = file
     else:
@@ -27,8 +30,8 @@ def get_tokenized(file, size=None, texts_size=cfg.TEXTS_SIZE, if_test=False):
         for text in raw:
             if cfg.tokenizator == 'GPT2':
                 text = tokenizer_gpt2.tokenize(text)
-            elif cfg.tokenizator == 'BERT':  # TODO BertTokenizer
-                raise NotImplementedError
+            elif cfg.tokenizator == 'BERT':
+                text = tokenizer_bert.tokenize(text)
             else:  # nltk tokenizer as default choice
                 text = nltk.word_tokenize(text.lower())
             tokenized.append(text)

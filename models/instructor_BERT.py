@@ -1,6 +1,7 @@
 from models.instructor import BasicInstructor
 from models.RelGAN_G import RelGAN_G
-from models.LSTM_D import LSTM_D
+from models.BERT_D import BERT_D
+from transformers import DistilBertForSequenceClassification
 import configuration as cfg
 import torch.optim as optim
 import torch
@@ -12,15 +13,15 @@ from utils.helpers import get_fixed_temperature, write_tokens_gpt
 from utils.preprocess import  tensor_to_tokens
 
 
-class LSTMInstructor(BasicInstructor):
+class BERTInstructor(BasicInstructor):
     def __init__(self):
-        super(LSTMInstructor, self).__init__()
+        super(BERTInstructor, self).__init__()
         # generator, discriminator
         self.gen = RelGAN_G(mem_slots=1, num_heads=2, head_size=256, embedding_dim=32, hidden_dim=32,
                             vocab_size=len(self.word2idx_dict), max_seq_len=cfg.MAX_SEQ_LEN,
                             padding_idx=cfg.PAD_IDX, gpu=cfg.if_cuda)
-        self.dis = LSTM_D(vocab_size=len(self.word2idx_dict), embed_dim=64, hidden_size=32, emb_pretrained=False,
-                          max_seq_len=cfg.MAX_SEQ_LEN, padding_idx=cfg.PAD_IDX, weights='uniform')
+        self.bert = DistilBertForSequenceClassification.from_pretrained('distilbert-base-cased')
+        self.dis = BERT_D(bert=self.bert, vocab_size=len(self.word2idx_dict), embed_dim=64, gpu=cfg.if_cuda)
         self.init_model()
         # Optimizer
         self.gen_opt = optim.Adam(self.gen.parameters(), lr=1e-2)
@@ -44,14 +45,12 @@ class LSTMInstructor(BasicInstructor):
                 'g_loss: %.4f, d_loss: %.4f, temperature: %.4f' % (g_loss, d_loss, self.gen.temperature))
             # TEST
             metrics = self.cal_metrics(fmt_str=False)
-            wandb.log({'g_loss': g_loss, 'd_loss': d_loss,
-                       'BLEU_2': metrics[0][0], 'BLEU_3': metrics[0][1], 'BLEU_4': metrics[0][2], 'BLEU_5': metrics[0][3],
-                       'NLL_gen': metrics[1],
-                       'NLL_div': metrics[2],
-                       "Self-BLEU_2": metrics[3][0], "Self-BLEU_3": metrics[3][1], "Self-BLEU_4": metrics[3][2],
-                       'epoch_adversarial': adv_epoch})
-            # print('[ADV] epoch %d: g_loss: %.4f, d_loss: %.4f, %s' % (
-            #             adv_epoch, g_loss, d_loss, self.cal_metrics(fmt_str=True)))
+            # wandb.log({'g_loss': g_loss, 'd_loss': d_loss,
+            #            'BLEU_2': metrics[0][0], 'BLEU_3': metrics[0][1], 'BLEU_4': metrics[0][2], 'BLEU_5': metrics[0][3],
+            #            'NLL_gen': metrics[1],
+            #            'NLL_div': metrics[2],
+            #            "Self-BLEU_2": metrics[3][0], "Self-BLEU_3": metrics[3][1], "Self-BLEU_4": metrics[3][2],
+            #            'epoch_adversarial': adv_epoch})
             if adv_epoch % 5 == 0 or adv_epoch == cfg.ADV_train_epoch - 1:
                 self._save('ADV', adv_epoch)
 
@@ -69,13 +68,13 @@ class LSTMInstructor(BasicInstructor):
             pre_loss = self.train_gen_epoch(self.gen, self.train_data.loader, self.mle_criterion, self.gen_opt)
             # ===Test===
             metrics = self.cal_metrics(fmt_str=False)
-            wandb.log({'nll loss pretrain': pre_loss,
-                       'BLEU_2': metrics[0][0], 'BLEU_3': metrics[0][1], 'BLEU_4': metrics[0][2],
-                       'BLEU_5': metrics[0][3],
-                       'NLL_gen': metrics[1],
-                       'NLL_div': metrics[2],
-                       "Self-BLEU_2": metrics[3][0], "Self-BLEU_3": metrics[3][1], "Self-BLEU_4": metrics[3][2],
-                       'epoch_mle': epoch})
+            # wandb.log({'nll loss pretrain': pre_loss,
+            #            'BLEU_2': metrics[0][0], 'BLEU_3': metrics[0][1], 'BLEU_4': metrics[0][2],
+            #            'BLEU_5': metrics[0][3],
+            #            'NLL_gen': metrics[1],
+            #            'NLL_div': metrics[2],
+            #            "Self-BLEU_2": metrics[3][0], "Self-BLEU_3": metrics[3][1], "Self-BLEU_4": metrics[3][2],
+            #            'epoch_mle': epoch})
             print('[MLE-GEN] epoch %d : pre_loss = %.4f, %s' % (
                         epoch, pre_loss, self.cal_metrics(fmt_str=True)))
             if epoch % 5 == 0 or epoch == epochs - 1:
@@ -122,7 +121,6 @@ class LSTMInstructor(BasicInstructor):
             torch.save(self.gen.state_dict(), 'gen_{}_{:05d}.pt'.format(phase, epoch))
         save_sample_path = 'samples_{}_{:05d}.txt'.format(phase, epoch)
         samples = self.gen.sample(cfg.BATCH_SIZE, cfg.BATCH_SIZE)
-        # save_tokens_transformer(save_sample_path, samples)
         write_tokens_gpt(save_sample_path, tensor_to_tokens(samples, self.idx2word_dict))
 
     @staticmethod
