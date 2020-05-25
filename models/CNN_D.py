@@ -43,14 +43,8 @@ class CNNDiscriminator(nn.Module):
         :param inp: batch_size * max_seq_len
         :return: batch_size * feature_dim
         """
-        print(inp.size())
+
         emb = self.embeddings(inp.long()).unsqueeze(1)  # batch_size * 1 * max_seq_len * embed_dim
-
-
-
-        print(emb.size())
-        print(emb.unsqueeze(1).size())
-
         convs = [F.relu(conv(emb)).squeeze(3) for conv in self.convs]  # [batch_size * num_filter * length]
         pools = [F.max_pool1d(conv, conv.size(2)).squeeze(2) for conv in convs]  # [batch_size * num_filter]
         pred = torch.cat(pools, 1)  # tensor: batch_size * feature_dim

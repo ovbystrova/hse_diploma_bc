@@ -29,11 +29,11 @@ class LMInstructor(BasicInstructor):
         #===PRE-TRAINING (GENERATOR)===
         if cfg.GEN_PRETRAIN:
             print('Starting GENERATOR MLE TRAINING')
-            self.pretrain_generator(3)
+            self.pretrain_generator(cfg.MLE_train_epoch)
             torch.save(self.gen.state_dict(), 'data/generator_mle')
         # # ===ADVERSARIAL TRAINING===
         print('Starting Adversarial Training')
-        progress = tqdm(range(3))
+        progress = tqdm(range(cfg.ADV_train_epoch))
         for adv_epoch in progress:
             g_loss = self.adv_train_generator(1)  # Generator
             d_loss = self.adv_train_discriminator(5)  # Discriminator
