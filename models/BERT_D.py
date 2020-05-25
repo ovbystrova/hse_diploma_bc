@@ -9,11 +9,12 @@ class BERT_D(nn.Module):
         self.embed_dim = embed_dim
         self.gpu = gpu
         self.init_bert()
+        self.fc = nn.Linear(self.vocab_size, 1)
 
     def init_bert(self):
-        self.bert.distilbert.embeddings = nn.Linear(self.vocab_size, 768)
+        self.bert.distilbert.word_embeddings = nn.Linear(28996, 768, bias=False)  # TODO пересмотреть
 
     def forward(self, x):  # (batch_size, sequence length)
-        print(self.bert.distilbert)
+        x = self.fc(x).squeeze(-1)
         x = self.bert(x)[0]
         return x

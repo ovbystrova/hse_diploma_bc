@@ -50,8 +50,6 @@ class RelGANInstructor(BasicInstructor):
                        'NLL_div': metrics[2],
                        "Self-BLEU_2": metrics[3][0], "Self-BLEU_3": metrics[3][1], "Self-BLEU_4": metrics[3][2],
                        'epoch_adversarial': adv_epoch})
-            # print('[ADV] epoch %d: g_loss: %.4f, d_loss: %.4f, %s' % (
-            #             adv_epoch, g_loss, d_loss, self.cal_metrics(fmt_str=True)))
             if adv_epoch % 5 == 0 or adv_epoch == cfg.ADV_train_epoch-1:
                 self._save('ADV', adv_epoch)
 

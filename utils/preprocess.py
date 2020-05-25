@@ -152,6 +152,6 @@ def tensor_to_tokens(tensor, dictionary):
         for word in sent.tolist():
             if word == cfg.PAD_IDX:
                 break
-            sent_token.append(dictionary[str(word)])
+            sent_token.append(dictionary[str(int(word))])
         tokens.append(sent_token)
     return tokens

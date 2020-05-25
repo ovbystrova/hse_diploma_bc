@@ -11,7 +11,6 @@ import configuration as cfg
 
 class BasicInstructor:
     def __init__(self):
-        self.clas = None
         # load dictionary
         self.word2idx_dict, self.idx2word_dict = load_dict(cfg.DATA_PATH)
         self.train_data = GenDataIter(cfg.DATA_PATH, batch_size=cfg.BATCH_SIZE)
@@ -19,7 +18,6 @@ class BasicInstructor:
         # Criterion
         self.mle_criterion = nn.NLLLoss()
         self.dis_criterion = nn.CrossEntropyLoss()
-        # self.clas_criterion = nn.CrossEntropyLoss()
         # Optimizer
         self.clas_opt = None
         # Metrics
@@ -27,7 +25,6 @@ class BasicInstructor:
         self.nll_gen = NLL('NLL_gen', if_use=True, gpu=cfg.if_cuda)
         self.nll_div = NLL('NLL_div', if_use=True, gpu=cfg.if_cuda)
         self.self_bleu = BLEU('Self-BLEU', gram=[2, 3, 4], if_use=True)
-        # self.clas_acc = ACC(if_use=True)
         self.all_metrics = [self.bleu, self.nll_gen, self.nll_div, self.self_bleu]
 
     def _run(self):
@@ -38,8 +35,6 @@ class BasicInstructor:
         pass
 
     def init_model(self):
-        # if cfg.GEN_PRETRAIN:
-        #     self.gen.load_state_dict(torch.load(cfg.GEN_PR_PATH))
         self.gen = self.gen.to(cfg.device)
         self.dis = self.dis.to(cfg.device)
 

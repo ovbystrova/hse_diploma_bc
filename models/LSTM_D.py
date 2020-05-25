@@ -12,7 +12,6 @@ class LSTM_D(nn.Module):
         super(LSTM_D, self).__init__()
         self.emb_pretrained = emb_pretrained
         self.embedding = nn.Linear(vocab_size, embed_dim, bias=False)
-        # self.embedding.weight.data = embeddings.weight.data # If use pretrained embeddings u
         self.max_seq_len = max_seq_len
         self.padding_idx = padding_idx
         self.rnn = nn.LSTM(input_size=embed_dim,

@@ -50,8 +50,6 @@ class LSTMInstructor(BasicInstructor):
                        'NLL_div': metrics[2],
                        "Self-BLEU_2": metrics[3][0], "Self-BLEU_3": metrics[3][1], "Self-BLEU_4": metrics[3][2],
                        'epoch_adversarial': adv_epoch})
-            # print('[ADV] epoch %d: g_loss: %.4f, d_loss: %.4f, %s' % (
-            #             adv_epoch, g_loss, d_loss, self.cal_metrics(fmt_str=True)))
             if adv_epoch % 5 == 0 or adv_epoch == cfg.ADV_train_epoch - 1:
                 self._save('ADV', adv_epoch)
 
@@ -122,7 +120,6 @@ class LSTMInstructor(BasicInstructor):
             torch.save(self.gen.state_dict(), 'gen_{}_{:05d}.pt'.format(phase, epoch))
         save_sample_path = 'samples_{}_{:05d}.txt'.format(phase, epoch)
         samples = self.gen.sample(cfg.BATCH_SIZE, cfg.BATCH_SIZE)
-        # save_tokens_transformer(save_sample_path, samples)
         write_tokens_gpt(save_sample_path, tensor_to_tokens(samples, self.idx2word_dict))
 
     @staticmethod
