@@ -1,25 +1,26 @@
 from models.instructor import BasicInstructor
+from models.RelGAN_G import RelGAN_G
+from models.BERT_D import BERT_D
 import configuration as cfg
 import torch.optim as optim
 import torch
 from tqdm import tqdm
 import wandb
 from utils.loss_functions import rsgan
-from utils.helpers import get_fixed_temperature
+import torch.nn.functional as F
+from utils.helpers import get_fixed_temperature, write_tokens_gpt
 from utils.preprocess import tensor_to_tokens
-from models.LSTM_G import LSTMGenerator
-from models.CNN_D import CNNDiscriminator
-from utils.helpers import write_tokens
+from transformers import DistilBertForSequenceClassification
 
-
-class LMInstructor(BasicInstructor):
+class BERTInstructor(BasicInstructor):
     def __init__(self):
-        super(LMInstructor, self).__init__()
+        super(BERTInstructor, self).__init__()
         # generator, discriminator
-        self.gen = LSTMGenerator(embedding_dim=200, hidden_dim=128, vocab_size=len(self.word2idx_dict),
-                                 max_seq_len=cfg.MAX_SEQ_LEN, padding_idx=cfg.PAD_IDX, weights='uniform')
-        self.dis = CNNDiscriminator(embed_dim=5, vocab_size=len(self.word2idx_dict), filter_sizes=[2, 3],
-                                    num_filters=[100, 100], padding_idx=cfg.PAD_IDX, gpu=cfg.if_cuda, dropout=0.2)
+        self.gen = RelGAN_G(mem_slots=1, num_heads=2, head_size=256, embedding_dim=32, hidden_dim=32,
+                            vocab_size=len(self.word2idx_dict), max_seq_len=cfg.MAX_SEQ_LEN,
+                            padding_idx=cfg.PAD_IDX, gpu=cfg.if_cuda)
+        bert = DistilBertForSequenceClassification.from_pretrained('distilbert-base-cased')
+        self.dis = BERT_D(bert=bert, vocab_size=len(self.word2idx_dict))
         self.init_model()
         # Optimizer
         self.gen_opt = optim.Adam(self.gen.parameters(), lr=1e-2)
@@ -37,7 +38,7 @@ class LMInstructor(BasicInstructor):
         progress = tqdm(range(cfg.ADV_train_epoch))
         for adv_epoch in progress:
             g_loss = self.adv_train_generator(1)  # Generator
-            d_loss = self.adv_train_discriminator(5)  # Discriminator
+            d_loss = self.adv_train_discriminator(1)  # Discriminator
             self.update_temperature(adv_epoch, cfg.ADV_train_epoch)  # update temperature
             progress.set_description(
                 'g_loss: %.4f, d_loss: %.4f, temperature: %.4f' % (g_loss, d_loss, self.gen.temperature))
@@ -82,9 +83,10 @@ class LMInstructor(BasicInstructor):
         total_loss = 0
         for step in range(g_step):
             real_samples = self.train_data.random_batch()['target']
-            gen_samples = self.gen.sample(cfg.BATCH_SIZE, cfg.BATCH_SIZE)
+            gen_samples = self.gen.sample(cfg.BATCH_SIZE, cfg.BATCH_SIZE, one_hot=True)
             if cfg.if_cuda:
                 real_samples, gen_samples = real_samples.cuda(), gen_samples.cuda()
+            real_samples = F.one_hot(real_samples, len(self.word2idx_dict)).float()
             # ===Train===
             d_out_real = self.dis(real_samples)
             d_out_fake = self.dis(gen_samples)
@@ -97,9 +99,10 @@ class LMInstructor(BasicInstructor):
         total_loss = 0
         for step in range(d_step):
             real_samples = self.train_data.random_batch()['target']
-            gen_samples = self.gen.sample(cfg.BATCH_SIZE, cfg.BATCH_SIZE)
+            gen_samples = self.gen.sample(cfg.BATCH_SIZE, cfg.BATCH_SIZE, one_hot=True)
             if cfg.if_cuda:
                 real_samples, gen_samples = real_samples.cuda(), gen_samples.cuda()
+            real_samples = F.one_hot(real_samples, len(self.word2idx_dict)).float()
             # ===Train===
             d_out_real = self.dis(real_samples)
             d_out_fake = self.dis(gen_samples)
@@ -117,10 +120,12 @@ class LMInstructor(BasicInstructor):
             torch.save(self.gen.state_dict(), 'gen_{}_{:05d}.pt'.format(phase, epoch))
         save_sample_path = 'samples_{}_{:05d}.txt'.format(phase, epoch)
         samples = self.gen.sample(cfg.BATCH_SIZE, cfg.BATCH_SIZE)
-        write_tokens(save_sample_path, tensor_to_tokens(samples, self.idx2word_dict))
+        write_tokens_gpt(save_sample_path, tensor_to_tokens(samples, self.idx2word_dict))
 
     @staticmethod
     def optimize(opt, loss, model=None, retain_graph=False):
         opt.zero_grad()
         loss.backward(retain_graph=retain_graph)
+        if model is not None:
+            torch.nn.utils.clip_grad_norm_(model.parameters(), cfg.CLIP_NORM)
         opt.step()

@@ -2,19 +2,26 @@ import torch.nn as nn
 
 
 class BERT_D(nn.Module):
-    def __init__(self, bert, vocab_size, embed_dim, gpu):
+    def __init__(self, bert, vocab_size, freeze_bert=True):
         super(BERT_D, self).__init__()
         self.bert = bert
         self.vocab_size = vocab_size
-        self.embed_dim = embed_dim
-        self.gpu = gpu
+        self.fc = nn.Linear(self.vocab_size, 768)
+        self.freeze_bert = freeze_bert
         self.init_bert()
-        self.fc = nn.Linear(self.vocab_size, 1)
 
     def init_bert(self):
-        self.bert.distilbert.word_embeddings = nn.Linear(28996, 768, bias=False)  # TODO пересмотреть
+        self.bert.resize_token_embeddings(self.vocab_size)
+        if self.freeze_bert:
+            for p in self.bert.parameters():
+                p.requires_grad = False
+            for p in self.bert.pre_classifier.parameters():
+                p.requires_grad = True
+            for p in self.bert.classifier.parameters():
+                p.requires_grad = True
 
     def forward(self, x):  # (batch_size, sequence length)
-        x = self.fc(x).squeeze(-1)
-        x = self.bert(x)[0]
+        x = self.fc(x)
+        print(x.size())
+        x = self.bert(inputs_embeds=x)[0]
         return x

@@ -15,11 +15,11 @@ CLIP_NORM = 5.0
 BATCH_SIZE = 64
 MAX_SEQ_LEN = 50
 
-PAD_IDX = 0  # {bert: 28997, gpt2: 50258, nltk:0}
-START_IDX = 1  # {bert: 28996, gpt2: 50257, nltk: 1}
+PAD_IDX = 28997  # {bert: 28997, gpt2: 50258, nltk:0}
+START_IDX = 28996  # {bert: 28996, gpt2: 50257, nltk: 1}
 PAD_TOKEN = '<pad>'
 START_TOKEN = '<start>'
-UNK_IDX = 2  # {bert:28998, gpt2:50259, nltk:2}
+UNK_IDX = 28998  # {bert:28998, gpt2:50259, nltk:2}
 UNK_TOKEN = '<unk>'
 
 dis_weights = 'uniform'
@@ -30,4 +30,4 @@ TEST_DATA_PATH = r"data/test_ds.txt"
 DATA_PATH = r"data"
 TEXTS_SIZE = '20k'  # 2k, 10k, 20k
 
-tokenizator = 'NLTK'  # ['BERT', 'NLTK', 'GPT2']
+tokenizator = 'BERT'  # ['BERT', 'NLTK', 'GPT2']

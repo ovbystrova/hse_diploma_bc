@@ -57,7 +57,7 @@ class NLL(Metrics):
 
                 hidden = model.init_hidden(data_loader.batch_size)
                 pred = model.forward(inp, hidden)
-                loss = criterion(pred, target.view(-1))
+                loss = criterion(pred, target.view(-1).long())
                 total_loss += loss.item()
         return round(total_loss / len(data_loader), 4)
 
