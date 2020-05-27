@@ -33,6 +33,6 @@ DATA_PATH = r"data"
 PRETRAIN = True
 
 TRAIN_DATA_PATH = DATA_PATH if not PRETRAIN else r"data/real_data_20k_train.txt"
-TEXTS_SIZE = '100k'  # 2k, 10k, 20k 100k
+TEXTS_SIZE = '1m'  # 2k, 10k, 20k 100k 1m
 
 tokenizator = 'GPT2'  # ['BERT', 'NLTK', 'GPT2']
