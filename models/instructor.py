@@ -13,7 +13,8 @@ class BasicInstructor:
     def __init__(self):
         # load dictionary
         self.word2idx_dict, self.idx2word_dict = load_dict(cfg.DATA_PATH)
-        self.train_data = GenDataIter(cfg.DATA_PATH, batch_size=cfg.BATCH_SIZE)
+        self.train_data = GenDataIter(cfg.TRAIN_DATA_PATH, batch_size=cfg.BATCH_SIZE)
+        self.valid_data = GenDataIter(cfg.VALID_DATA_PATH, batch_size=cfg.BATCH_SIZE, if_valid_data=True)
         self.test_data = GenDataIter(cfg.TEST_DATA_PATH, batch_size=cfg.BATCH_SIZE, if_test_data=True)
         # Criterion
         self.mle_criterion = nn.NLLLoss()
@@ -37,6 +38,20 @@ class BasicInstructor:
     def init_model(self):
         self.gen = self.gen.to(cfg.device)
         self.dis = self.dis.to(cfg.device)
+
+
+    def valid_gen_epoch(self, model, data_loader, criterion):
+        total_loss = 0
+        for i, data in enumerate(data_loader):
+            inp, target = data['input'], data['target']
+            if cfg.if_cuda:
+                inp, target = inp.to(cfg.device), target.to(cfg.device)
+            hidden = model.init_hidden(data_loader.batch_size)
+            pred = model.forward(inp, hidden)
+            loss = criterion(pred, target.view(-1))
+            total_loss += loss.item()
+        return total_loss / len(data_loader)
+
 
     def train_gen_epoch(self, model, data_loader, criterion, optimizer):
         total_loss = 0

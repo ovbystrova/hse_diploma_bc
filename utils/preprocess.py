@@ -7,7 +7,7 @@ from transformers import GPT2Tokenizer, DistilBertTokenizer
 seed(23)
 
 
-def get_tokenized(file, size=None, texts_size=cfg.TEXTS_SIZE, if_test=False):
+def get_tokenized(file, size=None, texts_size=cfg.TEXTS_SIZE, if_test=False, if_valid=False):
     """
     tokenize [file] and sample [size] random samples
     :param if_test:
@@ -23,8 +23,11 @@ def get_tokenized(file, size=None, texts_size=cfg.TEXTS_SIZE, if_test=False):
                                               pad_token='<pad>', bos_token='<start>')
     if if_test:
         path = file
+    elif if_valid:
+        path = "data/real_data_20k_valid.txt"
     else:
-        path = "{}/real_data_{}.txt".format(file, texts_size)
+        # path = "{}/real_data_{}.txt".format(file, texts_size)
+        path = "data/real_data_20k_train.txt"
     tokenized = list()
     with open(path, encoding='utf-8') as raw:
         for text in raw:

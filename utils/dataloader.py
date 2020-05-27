@@ -21,11 +21,13 @@ class GenDataIter:
     def __init__(self, data,
                  batch_size,
                  shuffle=None,
-                 if_test_data=False):
+                 if_test_data=False,
+                 if_valid_data=False):
         self.batch_size = batch_size
         self.start_letter = cfg.START_TOKEN
         self.shuffle = shuffle
         self.test = if_test_data
+        self.valid = if_valid_data
 
         if if_test_data:  # used for the classifier
             self.word2idx, self.idx2word = load_test_dict()
@@ -79,6 +81,8 @@ class GenDataIter:
         """Load real data from local file"""
         if self.test:
             self.tokens = get_tokenized(filename, if_test=True)
+        elif self.valid:
+            self.tokens = get_tokenized(filename, if_valid=True)
         else:
             self.tokens = get_tokenized(filename)
         samples_index = tokens_to_tensor(self.tokens, self.word2idx)
