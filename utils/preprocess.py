@@ -10,7 +10,8 @@ seed(23)
 def get_tokenized(file, size=None, texts_size=cfg.TEXTS_SIZE, if_test=False, if_valid=False):
     """
     tokenize [file] and sample [size] random samples
-    :param if_test:
+    :param if_valid: True if creating Validation loader
+    :param if_test: True if creating Tets loader
     :param texts_size: str, one of [2k, 10k, 20k]
     :param file: path to the real_data.txt file
     :param size: number of sentences
@@ -18,16 +19,12 @@ def get_tokenized(file, size=None, texts_size=cfg.TEXTS_SIZE, if_test=False, if_
     """
     tokenizer_gpt2 = GPT2Tokenizer.from_pretrained('gpt2', unk_token='<unk>', eos_token='<pad>',
                                               pad_token='<pad>', bos_token='<start>')
-
     tokenizer_bert = DistilBertTokenizer.from_pretrained('distilbert-base-cased', unk_token='<unk>', eos_token='<pad>',
                                               pad_token='<pad>', bos_token='<start>')
-    if if_test:
+    if if_test or if_valid:
         path = file
-    elif if_valid:
-        path = "data/real_data_20k_valid.txt"
     else:
-        # path = "{}/real_data_{}.txt".format(file, texts_size)
-        path = "data/real_data_20k_train.txt"
+        path = "{}/real_data_{}.txt".format(file, texts_size)
     tokenized = list()
     with open(path, encoding='utf-8') as raw:
         for text in raw:
@@ -119,8 +116,8 @@ def init_dict(path):
     tokens = get_tokenized(path)
     word_set = get_word_list(tokens)
     word2idx_dict, idx2word_dict = get_dict(word_set)
-    iw_path = path + '/iw_{}.txt'.format(cfg.tokenizator)
-    wi_path = path + '/wi_{}.txt'.format(cfg.tokenizator)
+    iw_path = path + '/iw_{}_{}.txt'.format(cfg.tokenizator, cfg.TEXTS_SIZE)
+    wi_path = path + '/wi_{}_{}.txt'.format(cfg.tokenizator, cfg.TEXTS_SIZE)
     with open(wi_path, 'w', encoding='utf-8') as dictout:
         dictout.write(str(word2idx_dict))
     with open(iw_path, 'w', encoding='utf-8') as dictout:

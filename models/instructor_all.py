@@ -9,7 +9,7 @@ from utils.helpers import get_fixed_temperature
 from utils.preprocess import tensor_to_tokens
 from models.LSTM_G import LSTMGenerator
 from models.CNN_D import CNNDiscriminator
-from utils.helpers import write_tokens
+from utils.helpers import write_tokens_gpt
 
 
 class Instructor(BasicInstructor):
@@ -22,7 +22,7 @@ class Instructor(BasicInstructor):
                                     num_filters=[100, 100], padding_idx=cfg.PAD_IDX, gpu=cfg.if_cuda, dropout=0.2)
         self.init_model()
         # Optimizer
-        self.gen_opt = optim.Adam(self.gen.parameters(), lr=1e-2)
+        self.gen_opt = optim.Adam(self.gen.parameters(), lr=cfg.GEN_PRETRAIN_LR)
         self.gen_adv_opt = optim.Adam(self.gen.parameters(), lr=1e-4)
         self.dis_opt = optim.Adam(self.dis.parameters(), lr=1e-4)
 
@@ -89,8 +89,7 @@ class Instructor(BasicInstructor):
                     break
 
             prev_loss = min(prev_loss, valid_loss)
-            if epoch % 5 == 0 or epoch == epochs - 1:
-                self._save('MLE', epoch)
+            self._save('MLE', epoch)
 
     def adv_train_generator(self, g_step):
         total_loss = 0
@@ -131,7 +130,7 @@ class Instructor(BasicInstructor):
             torch.save(self.gen.state_dict(), 'gen_{}_{:05d}.pt'.format(phase, epoch))
         save_sample_path = 'samples_{}_{:05d}.txt'.format(phase, epoch)
         samples = self.gen.sample(cfg.BATCH_SIZE, cfg.BATCH_SIZE)
-        write_tokens(save_sample_path, tensor_to_tokens(samples, self.idx2word_dict))
+        write_tokens_gpt(save_sample_path, tensor_to_tokens(samples, self.idx2word_dict))
 
     @staticmethod
     def optimize(opt, loss, model=None, retain_graph=False):

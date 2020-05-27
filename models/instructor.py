@@ -13,7 +13,7 @@ class BasicInstructor:
     def __init__(self):
         # load dictionary
         self.word2idx_dict, self.idx2word_dict = load_dict(cfg.DATA_PATH)
-        self.train_data = GenDataIter(cfg.TRAIN_DATA_PATH, batch_size=cfg.BATCH_SIZE)
+        self.train_data = GenDataIter(cfg.DATA_PATH, batch_size=cfg.BATCH_SIZE)
         self.valid_data = GenDataIter(cfg.VALID_DATA_PATH, batch_size=cfg.BATCH_SIZE, if_valid_data=True)
         self.test_data = GenDataIter(cfg.TEST_DATA_PATH, batch_size=cfg.BATCH_SIZE, if_test_data=True)
         # Criterion
