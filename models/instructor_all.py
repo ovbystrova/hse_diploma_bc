@@ -70,15 +70,15 @@ class Instructor(BasicInstructor):
             valid_loss = self.valid_gen_epoch(self.gen, self.valid_data.loader, self.mle_criterion)
             # ===Test===
             metrics = self.cal_metrics(fmt_str=False)
-            wandb.log({'nll loss pretrain': pre_loss, 'nll loss valid'
+            wandb.log({'nll loss pretrain': pre_loss, 'nll loss valid':valid_loss,
                        'BLEU_2': metrics[0][0], 'BLEU_3': metrics[0][1], 'BLEU_4': metrics[0][2],
                        'BLEU_5': metrics[0][3],
                        'NLL_gen': metrics[1],
                        'NLL_div': metrics[2],
                        "Self-BLEU_2": metrics[3][0], "Self-BLEU_3": metrics[3][1], "Self-BLEU_4": metrics[3][2],
                        'epoch_mle': epoch})
-            print('[MLE-GEN] epoch %d : pre_loss = %.4f, %s' % (
-                        epoch, pre_loss, self.cal_metrics(fmt_str=True)))
+            print('[MLE-GEN] epoch %d : pre_loss = %.4f, valid_loss = %.4f,  %s' % (
+                        epoch, pre_loss, valid_loss, self.cal_metrics(fmt_str=True)))
             if early_stopping > 0:
                 if valid_loss > prev_loss:
                     es_epochs += 1
