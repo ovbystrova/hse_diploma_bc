@@ -7,13 +7,12 @@ from utils.helpers import truncated_normal_
 
 class LSTM_D(nn.Module):
 
-    def __init__(self, vocab_size, embed_dim, hidden_size, emb_pretrained, max_seq_len, padding_idx,
+    def __init__(self, vocab_size, embed_dim, hidden_size, emb_pretrained, max_seq_len,
                  weights, gpu=cfg.if_cuda):
         super(LSTM_D, self).__init__()
         self.emb_pretrained = emb_pretrained
         self.embedding = nn.Linear(vocab_size, embed_dim, bias=False)
         self.max_seq_len = max_seq_len
-        self.padding_idx = padding_idx
         self.rnn = nn.LSTM(input_size=embed_dim,
                            hidden_size=hidden_size,
                            bidirectional=True,

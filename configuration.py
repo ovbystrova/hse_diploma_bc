@@ -5,7 +5,7 @@ if_cuda = True if torch.cuda.is_available() else False
 
 GEN_PRETRAIN = False  # If pretrain generator
 GEN_PR_PATH = ''  # Path to pretrained generator model
-GEN_PRETRAIN_LR = 1e-3
+GEN_PRETRAIN_LR = 1e-2
 
 MLE_train_epoch = 1  # for how long to pretrain the generator
 ADV_train_epoch = 100  # how many epochs to run

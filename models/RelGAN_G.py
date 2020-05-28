@@ -446,7 +446,7 @@ class RelGAN_G(LSTMGenerator):
         samples = samples[:num_samples]  # num_samples * seq_len
         if one_hot:
             return all_preds  # batch_size * seq_len * vocab_size
-        return samples
+        return samples.float()
 
     @staticmethod
     def add_gumbel(o_t, eps=1e-10):

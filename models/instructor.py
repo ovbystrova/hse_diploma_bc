@@ -6,8 +6,6 @@ from metrics.bleu import BLEU
 from metrics.nll import NLL
 import configuration as cfg
 
-# TODO Упростить структуру инструкторов так, чтобы дублирующего кода было по-минимуму
-
 
 class BasicInstructor:
     def __init__(self):
@@ -42,14 +40,15 @@ class BasicInstructor:
 
     def valid_gen_epoch(self, model, data_loader, criterion):
         total_loss = 0
-        for i, data in enumerate(data_loader):
-            inp, target = data['input'], data['target']
-            if cfg.if_cuda:
-                inp, target = inp.to(cfg.device), target.to(cfg.device)
-            hidden = model.init_hidden(data_loader.batch_size)
-            pred = model.forward(inp, hidden)
-            loss = criterion(pred, target.view(-1))
-            total_loss += loss.item()
+        with torch.no_grad():
+            for i, data in enumerate(data_loader):
+                inp, target = data['input'], data['target']
+                if cfg.if_cuda:
+                    inp, target = inp.to(cfg.device), target.to(cfg.device)
+                hidden = model.init_hidden(data_loader.batch_size)
+                pred = model.forward(inp, hidden)
+                loss = criterion(pred, target.view(-1))
+                total_loss += loss.item()
         return total_loss / len(data_loader)
 
 

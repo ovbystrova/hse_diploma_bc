@@ -2,7 +2,6 @@ import torch
 import random
 from torch.utils.data import Dataset, DataLoader
 import configuration as cfg
-# from utils.preprocess import *
 from utils.preprocess import load_test_dict, load_dict, get_tokenized, tokens_to_tensor
 
 
