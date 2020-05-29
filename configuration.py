@@ -5,7 +5,7 @@ if_cuda = True if torch.cuda.is_available() else False
 
 GEN_PRETRAIN = False  # If pretrain generator
 GEN_PR_PATH = ''  # Path to pretrained generator model
-GEN_PRETRAIN_LR = 1e-2
+GEN_PRETRAIN_LR = 1e-3
 
 MLE_train_epoch = 1  # for how long to pretrain the generator
 ADV_train_epoch = 100  # how many epochs to run
@@ -33,6 +33,6 @@ DATA_PATH = r"data"
 PRETRAIN = True
 
 TRAIN_DATA_PATH = DATA_PATH if not PRETRAIN else r"data/real_data_20k_train.txt"
-TEXTS_SIZE = '1m'  # 2k, 10k, 20k 100k 1m
+TEXTS_SIZE = '20k'  # 2k, 10k, 20k 100k 1m
 
 tokenizator = 'GPT2'  # ['BERT', 'NLTK', 'GPT2']

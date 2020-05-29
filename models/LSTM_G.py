@@ -9,6 +9,7 @@
 import torch
 import math
 import torch.nn as nn
+import torch.nn.functional as F
 import configuration as cfg
 from utils.helpers import truncated_normal_
 
@@ -66,28 +67,59 @@ class LSTMGenerator(nn.Module):
         else:
             return pred
 
-    def sample(self, num_samples, batch_size, start_letter=cfg.START_IDX):
-        """
-        Samples the network and returns num_samples samples of length max_seq_len.
-        :return samples: num_samples * max_seq_length (a sampled sequence in each row)
-        """
-        num_batch = num_samples // batch_size + 1 if num_samples != batch_size else 1
-        samples = torch.zeros(num_batch * batch_size, self.max_seq_len).long()
 
-        # Generate sentences with multinomial sampling strategy
+    def step(self, inp, hidden):
+        """
+        RelGAN step forward
+        :param inp: [batch_size]
+        :param hidden: memory size
+        :return: pred, hidden, next_token, next_token_onehot, next_o
+            - pred: batch_size * vocab_size, use for adversarial training backward
+            - hidden: next hidden
+            - next_token: [batch_size], next sentence token
+            - next_token_onehot: batch_size * vocab_size, not used yet
+            - next_o: batch_size * vocab_size, not used yet
+        """
+        emb = self.embeddings(inp).unsqueeze(1)
+        out, hidden = self.lstm(emb, hidden)
+        gumbel_t = self.add_gumbel(self.lstm2out(out.squeeze(1)))
+        next_token = torch.argmax(gumbel_t, dim=1).detach()
+        # next_token_onehot = F.one_hot(next_token, cfg.vocab_size).float()  # not used yet
+        next_token_onehot = None
+
+        pred = F.softmax(gumbel_t * self.temperature, dim=-1)  # batch_size * vocab_size
+        # next_o = torch.sum(next_token_onehot * pred, dim=1)  # not used yet
+        next_o = None
+
+        return pred, hidden, next_token, next_token_onehot, next_o
+
+
+    def sample(self, num_samples, batch_size, one_hot=False, start_letter=cfg.START_IDX):
+        """
+        Sample from RelGAN Generator
+        - one_hot: if return pred of RelGAN, used for adversarial training
+        :return:
+            - all_preds: batch_size * seq_len * vocab_size, only use for a batch
+            - samples: all samples
+        """
+        global all_preds
+        num_batch = num_samples // batch_size + 1 if num_samples != batch_size else 1
+        samples = torch.zeros(num_batch * batch_size, self.max_seq_len).long().to(cfg.device)
+        if one_hot:
+            all_preds = torch.zeros(batch_size, self.max_seq_len, self.vocab_size).to(cfg.device)
         for b in range(num_batch):
             hidden = self.init_hidden(batch_size)
-            inp = torch.LongTensor([start_letter] * batch_size)
-            if self.gpu:
-                inp = inp.cuda()
+            inp = torch.LongTensor([start_letter] * batch_size).to(cfg.device)
 
             for i in range(self.max_seq_len):
-                out, hidden = self.forward(inp, hidden, need_hidden=True)  # out: batch_size * vocab_size
-                next_token = torch.multinomial(torch.exp(out), 1)  # batch_size * 1 (sampling from each row)
-                samples[b * batch_size:(b + 1) * batch_size, i] = next_token.view(-1)
-                inp = next_token.view(-1)
-        samples = samples[:num_samples]
-
+                pred, hidden, next_token, _, _ = self.step(inp, hidden)
+                samples[b * batch_size:(b + 1) * batch_size, i] = next_token
+                if one_hot:
+                    all_preds[:, i] = pred
+                inp = next_token
+        samples = samples[:num_samples]  # num_samples * seq_len
+        if one_hot:
+            return all_preds  # batch_size * seq_len * vocab_size
         return samples.float()
 
     def init_params(self):
@@ -110,3 +142,12 @@ class LSTMGenerator(nn.Module):
         h = torch.zeros(1, batch_size, self.hidden_dim).to(cfg.device)
         c = torch.zeros(1, batch_size, self.hidden_dim).to(cfg.device)
         return h, c
+
+    @staticmethod
+    def add_gumbel(o_t, eps=1e-10):
+        """Add o_t by a vector sampled from Gumbel(0,1)"""
+        u = torch.zeros(o_t.size()).to(cfg.device)
+        u.uniform_(0, 1).to(cfg.device)
+        g_t = -torch.log(-torch.log(u + eps) + eps)
+        gumbel_t = o_t.to(cfg.device) + g_t
+        return gumbel_t

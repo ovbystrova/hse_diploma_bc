@@ -107,10 +107,10 @@ class BasicInstructor:
         """
         with torch.no_grad():
             # Prepare data for evaluation
-            eval_samples = self.gen.sample(2000, 2000)
+            eval_samples = self.pre_gen.sample(2000, 2000)
             gen_data = GenDataIter(eval_samples, batch_size=cfg.BATCH_SIZE)
             gen_tokens = tensor_to_tokens(eval_samples, self.idx2word_dict)
-            gen_tokens_s = tensor_to_tokens(self.gen.sample(2000, 2000), self.idx2word_dict)
+            gen_tokens_s = tensor_to_tokens(self.pre_gen.sample(2000, 2000), self.idx2word_dict)
             # Reset metrics
             self.bleu.reset(test_text=gen_tokens, real_text=self.test_data.tokens)
             self.nll_gen.reset(self.gen, self.train_data.loader)
