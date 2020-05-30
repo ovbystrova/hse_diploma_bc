@@ -8,6 +8,7 @@
 # Copyrights (C) 2018. All Rights Reserved.
 import torch
 import math
+import numpy as np
 import torch.nn as nn
 import torch.nn.functional as F
 import configuration as cfg
@@ -45,7 +46,8 @@ class LSTMGenerator(nn.Module):
 
         self.init_params()
 
-    def forward(self, inp, hidden, need_hidden=False):
+    def forward(self, inp, hidden=(torch.zeros(1, 64, 128).to(cfg.device),
+                          torch.zeros(1, 64, 128).to(cfg.device)), need_hidden=False):
         """
         Embeds input and applies LSTM
         :param inp: batch_size * seq_len
@@ -82,12 +84,22 @@ class LSTMGenerator(nn.Module):
         """
         emb = self.embeddings(inp).unsqueeze(1)
         out, hidden = self.lstm(emb, hidden)
+        tensor_out = self.lstm2out(out.squeeze(1))
         gumbel_t = self.add_gumbel(self.lstm2out(out.squeeze(1)))
-        next_token = torch.argmax(gumbel_t, dim=1).detach()
+        # gumbel_t = torch.softmax(tensor_out / 0.8, dim=2)
+        # new_token = np.random.choice(50260, 1, p=tokens_probs[0, -1, :].cpu().numpy())
+
+        # next_token = torch.argmax(gumbel_t, dim=1).detach()
         # next_token_onehot = F.one_hot(next_token, cfg.vocab_size).float()  # not used yet
         next_token_onehot = None
 
         pred = F.softmax(gumbel_t * self.temperature, dim=-1)  # batch_size * vocab_size
+        next_token = []
+        for el in pred:
+            next_token.append(np.random.choice(50260, 1, p=el.detach().numpy()))
+        next_token = torch.LongTensor(next_token).squeeze(1).detach()
+        # print(next_token.size())
+        # next_token = torch.argmax(gumbel_t, dim=1).detach()
         # next_o = torch.sum(next_token_onehot * pred, dim=1)  # not used yet
         next_o = None
 

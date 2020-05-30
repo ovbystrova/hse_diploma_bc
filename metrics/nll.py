@@ -55,8 +55,10 @@ class NLL(Metrics):
                 if gpu:
                     inp, target = inp.cuda(), target.cuda()
 
-                hidden = model.init_hidden(data_loader.batch_size)
-                pred = model.forward(inp, hidden)
+                # hidden = model.init_hidden(data_loader.batch_size)
+                # hidden = (torch.zeros(1, 64, 128).to(cfg.device),
+                #           torch.zeros(1, 64, 128).to(cfg.device))
+                pred = model.forward(inp)
                 loss = criterion(pred, target.view(-1).long())
                 total_loss += loss.item()
         return round(total_loss / len(data_loader), 4)
@@ -73,7 +75,9 @@ class NLL(Metrics):
                 if gpu:
                     inp, target, label = inp.cuda(), target.cuda(), label.cuda()
 
-                hidden = model.init_hidden(data_loader.batch_size)
+                # hidden = model.init_hidden(data_loader.batch_size)
+                hidden = (torch.zeros(1, 64, 128).to(cfg.device),
+                          torch.zeros(1, 64, 128).to(cfg.device))
                 if model.name == 'oracle':
                     pred = model.forward(inp, hidden)
                 else:

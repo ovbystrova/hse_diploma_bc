@@ -44,10 +44,12 @@ class Instructor(BasicInstructor):
         for ind, (name, param) in enumerate(self.gen.named_parameters()):
             if ind < 7:
                 param.requires_grad = False
-        print('Pretrained generator loaded and frozed')
+        print('Pretrained generator loaded. Generator does not require_grad.')
         dis = torch.load('pretrained_dis.pth', map_location=cfg.device)
         self.dis.load_state_dict(dis['model_state_dict'])
-        print('Pretrained discriminator loaded')
+        for ind, (name, param) in enumerate(self.dis.named_parameters()):
+                param.requires_grad = False
+        print('Pretrained discriminator loaded. Discriminator does not require_grad.')
         print('Starting Adversarial Training')
         progress = tqdm(range(cfg.ADV_train_epoch))
         for adv_epoch in progress:
@@ -58,12 +60,16 @@ class Instructor(BasicInstructor):
                 'g_loss: %.4f, d_loss: %.4f, temperature: %.4f' % (g_loss, d_loss, self.pre_gen.temperature))
             # TEST
             metrics = self.cal_metrics(fmt_str=False)
-            wandb.log({'g_loss': g_loss, 'd_loss': d_loss,
+            accuracy_dis = self.calc_accuracy()
+            wandb.log({'g_loss': g_loss, 'd_loss': d_loss, 'diss_accuracy': accuracy_dis,
                        'BLEU_2': metrics[0][0], 'BLEU_3': metrics[0][1], 'BLEU_4': metrics[0][2], 'BLEU_5': metrics[0][3],
                        'NLL_gen': metrics[1],
                        'NLL_div': metrics[2],
                        "Self-BLEU_2": metrics[3][0], "Self-BLEU_3": metrics[3][1], "Self-BLEU_4": metrics[3][2],
                        'epoch_adversarial': adv_epoch})
+            # wandb.log({'diss_accuracy': accuracy_dis,
+            #            'g_loss': g_loss,
+            #            'd_loss': d_loss})
             if adv_epoch % 2 == 0 or adv_epoch == cfg.ADV_train_epoch - 1:
                 self._save('ADV', adv_epoch)
 
@@ -109,12 +115,28 @@ class Instructor(BasicInstructor):
 
     def _save(self, phase, epoch):
         """Save model state dict and generator's samples"""
-        if phase != 'ADV':
+        if phase == 'ADV':
             torch.save(self.gen.state_dict(), 'gen_{}_{:05d}.pt'.format(phase, epoch))
             torch.save(self.dis.state_dict(), 'dis_{}_{:05d}.pt'.format(phase, epoch))
         save_sample_path = 'samples_{}_{:05d}.txt'.format(phase, epoch)
         samples = self.pre_gen.sample(cfg.BATCH_SIZE, cfg.BATCH_SIZE)
         write_tokens_gpt(save_sample_path, tensor_to_tokens(samples, self.idx2word_dict))
+
+
+    def calc_accuracy(self):
+        total_acc = 0
+        for i in range(10):
+            sampled = self.pre_gen.sample(64, 64, one_hot=True)
+            real = F.one_hot(self.train_data.random_batch()['target'], len(self.word2idx_dict)).float()
+            to_dis = torch.cat((sampled, real))
+            target_gen = torch.zeros((cfg.BATCH_SIZE))
+            target_dis = torch.ones((cfg.BATCH_SIZE))
+            target = torch.cat((target_gen, target_dis))
+            with torch.no_grad():
+                logits = self.dis(to_dis)
+                total_acc += torch.sum((logits.argmax(dim=-1) == target)).item()
+        return total_acc / (128*10)
+
 
     @staticmethod
     def optimize(opt, loss, model=None, retain_graph=False):
