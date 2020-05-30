@@ -22,8 +22,8 @@ class Instructor(BasicInstructor):
         # generator, discriminator
         self.pre_gen = LSTMGenerator(embedding_dim=200, hidden_dim=128, vocab_size=len(self.word2idx_dict),
                                  max_seq_len=cfg.MAX_SEQ_LEN, padding_idx=cfg.PAD_IDX, weights='uniform')
-        self.gen = nn.Sequential(self.pre_gen, nn.Linear(len(self.word2idx_dict), 256), nn.ReLU(),
-                      nn.Linear(256, len(self.word2idx_dict)))
+        self.gen = nn.Sequential(self.pre_gen, nn.Linear(len(self.word2idx_dict), len(self.word2idx_dict)))#, #nn.ReLU(),
+                      # nn.Linear(256, len(self.word2idx_dict)))
 
         # self.dis = CNNDiscriminator(embed_dim=5, vocab_size=len(self.word2idx_dict), filter_sizes=[2, 3],
         #                             num_filters=[100, 100], padding_idx=cfg.PAD_IDX, gpu=cfg.if_cuda, dropout=0.2)
@@ -47,8 +47,8 @@ class Instructor(BasicInstructor):
         print('Pretrained generator loaded. Generator does not require_grad.')
         dis = torch.load('pretrained_dis.pth', map_location=cfg.device)
         self.dis.load_state_dict(dis['model_state_dict'])
-        for ind, (name, param) in enumerate(self.dis.named_parameters()):
-                param.requires_grad = False
+        # for ind, (name, param) in enumerate(self.dis.named_parameters()):
+        #         param.requires_grad = False
         print('Pretrained discriminator loaded. Discriminator does not require_grad.')
         print('Starting Adversarial Training')
         progress = tqdm(range(cfg.ADV_train_epoch))
@@ -106,7 +106,7 @@ class Instructor(BasicInstructor):
             d_out_real = self.dis(real_samples)
             d_out_fake = self.dis(gen_samples)
             _, d_loss = rsgan(d_out_real, d_out_fake)
-            self.optimize(self.dis_opt, d_loss, self.dis)
+            # self.optimize(self.dis_opt, d_loss, self.dis)
             total_loss += d_loss.item()
         return total_loss / d_step if d_step != 0 else 0
 
@@ -127,10 +127,10 @@ class Instructor(BasicInstructor):
         total_acc = 0
         for i in range(10):
             sampled = self.pre_gen.sample(64, 64, one_hot=True)
-            real = F.one_hot(self.train_data.random_batch()['target'], len(self.word2idx_dict)).float()
+            real = F.one_hot(self.test_data.random_batch()['target'], len(self.word2idx_dict)).float()
             to_dis = torch.cat((sampled, real))
-            target_gen = torch.zeros((cfg.BATCH_SIZE))
-            target_dis = torch.ones((cfg.BATCH_SIZE))
+            target_gen = torch.zeros((cfg.BATCH_SIZE)).to(cfg.device)
+            target_dis = torch.ones((cfg.BATCH_SIZE)).to(cfg.device)
             target = torch.cat((target_gen, target_dis))
             with torch.no_grad():
                 logits = self.dis(to_dis)
