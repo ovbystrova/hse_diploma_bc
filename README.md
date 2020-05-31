@@ -1,6 +1,6 @@
 # Fake News Detector as a New Evaluation Metric for Text GANs
 
-In this work we explore two problems: the process of text generation and neural fake news detection. LSTM (with differenc embeddings) and Bert models are proposed to deal with neural fake news detection task. Also the impact of sampling type on classifier accuracy is checked. The stadu is based on Cornell Newsroom Summarization Dataset and the final dataset consists of 1.2 mln texts, half of them is real, the other half was generated using GPT-2 model. Also, we explore the process of training language model as GAN.
+In this work we explore two problems: the process of text generation and neural fake news detection. LSTM (with differenc embeddings) and Bert models are proposed to deal with neural fake news detection task. Also the impact of sampling type on classifier accuracy is checked. The study is based on Cornell Newsroom Summarization Dataset and the final dataset consists of 1.2 mln texts, half of them is real, the other half was generated using GPT-2 model. Also, we explore the process of training language model as GAN.
 
 
 All **data** is available at: https://drive.google.com/drive/u/0/folders/1ldPR1TKsBJHrVnFyIprw1aBDQ8yaNJao
@@ -15,7 +15,7 @@ You need to clone the repository to your local machine and do the following step
 
 After that you can run .ipynb notebook from /notebooks folder with postfix _run to run any of *instructor* models (For example, '*LSTM_discriminator_run.ipynb*')
 
-All metric updates will be logged to wandb project page (you need to specify it jupyter notebook file).
+All metric updates will be logged to wandb project page (you need to specify it in jupyter notebook file).
 
 
 # Wandb project page
