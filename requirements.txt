@@ -1,0 +1,13 @@
+eli5==0.10.1
+nltk==3.4.5
+numpy==1.16.5
+pandas==0.25.1
+sentencepiece==0.1.85
+sklearn==0.0
+tokenizers==0.5.2
+torch==1.4.0
+torchtext==0.5.0
+torchvision==0.5.0
+tqdm==4.36.1
+transformers==2.5.1
+wandb==0.8.29
