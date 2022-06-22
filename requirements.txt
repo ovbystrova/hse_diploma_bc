@@ -1,6 +1,6 @@
 eli5==0.10.1
 nltk==3.4.5
-numpy==1.16.5
+numpy==1.22.0
 pandas==0.25.1
 sentencepiece==0.1.85
 sklearn==0.0
